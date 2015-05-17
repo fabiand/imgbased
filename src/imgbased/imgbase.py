@@ -20,7 +20,6 @@
 #
 # Author(s): Fabian Deutsch <fabiand@redhat.com>
 #
-import subprocess
 import os
 import re
 from .hooks import Hooks
@@ -367,33 +366,20 @@ class ImageLayers(object):
             self.hooks.emit("new-layer-added", "/",
                             new_layer.lvm.path, mount.target)
 
-    def add_base(self, infile, size, version=None, lvs=None):
+    def add_base(self, size, version=None, lvs=None):
         """Add a new base LV
         """
-        assert infile
         assert size > 0
-
-        cmd = ["dd", "conv=sparse"]
-        kwargs = {}
-
-        if type(infile) is file:
-            log().debug("Reading base from stdin")
-            kwargs["stdin"] = infile
-        elif type(infile) in [str, unicode]:
-            log().debug("Reading base from file: %s" % infile)
-            cmd.append("if=%s" % infile)
-        else:
-            raise RuntimeError("Unknown infile: %s" % infile)
 
         new_base_lv = self._next_base(version=version, lvs=lvs)
         log().debug("New base will be: %s" % new_base_lv)
         pool = LVM.Thinpool(self.vg, self.thinpool)
         pool.create_thinvol(new_base_lv.name, size)
 
-        cmd.append("of=%s" % new_base_lv.path)
-        log().debug("Running: %s %s" % (cmd, kwargs))
-        if not self.dry:
-            subprocess.check_call(cmd, **kwargs)
+        # Emit a signal, to give consumers a chance
+        # to do something with the base before it becomes
+        # read-only.
+        self.hooks.emit("new-base-created", new_base_lv.path)
 
         new_base_lv.lvm.permission("r")
         new_base_lv.lvm.setactivationskip("y")

@@ -60,7 +60,7 @@ def check_argparse(app, args):
         elif args.add_with_image:
             if not args.size or not args.image:
                 raise RuntimeError("--size and image required")
-            app.imgbase.add_base_from_image(args.image)
+            add_base_from_image(app, args.image)
         elif args.add_with_tree:
             if not args.size or not args.image:
                 raise RuntimeError("--size and image required")
@@ -69,5 +69,67 @@ def check_argparse(app, args):
             print (app.imgbase.latest_base())
         elif args.of_layer:
             print (str(app.imgbase.base_of_layer(args.of_layer)))
+
+
+def add_base_from_image(app, infile):
+    cmd = ["dd", "conv=sparse"]
+    kwargs = {}
+
+    if type(infile) is file:
+        log().debug("Reading base from stdin")
+        kwargs["stdin"] = infile
+    elif type(infile) in [str, unicode]:
+        log().debug("Reading base from file: %s" % infile)
+        cmd.append("if=%s" % infile)
+    else:
+        raise RuntimeError("Unknown infile: %s" % infile)
+
+    def populate_base(ctx, path):
+        print("Context: %s / Path: %s" % (ctx, path))
+        cmd.append("of=%s" % path)
+        log().debug("Running: %s %s" % (cmd, kwargs))
+#        if not self.dry:
+#            subprocess.check_call(cmd, **kwargs)
+
+    app.imgbase.hooks.connect("new-base-created",
+                              populate_base)
+
+    # FIXME determine size
+    size = None
+    app.imgbase.add_base(size)
+
+    app.imgbase.hooks.unconnect("new-base-created",
+                                populate_base)
+
+
+def add_base_with_tree(app, infile):
+    cmd = ["dd", "conv=sparse"]
+    kwargs = {}
+
+    if type(infile) is file:
+        log().debug("Reading base from stdin")
+        kwargs["stdin"] = infile
+    elif type(infile) in [str, unicode]:
+        log().debug("Reading base from file: %s" % infile)
+        cmd.append("if=%s" % infile)
+    else:
+        raise RuntimeError("Unknown infile: %s" % infile)
+
+    def populate_base(ctx, path):
+        print("Context: %s / Path: %s" % (ctx, path))
+        cmd.append("of=%s" % path)
+        log().debug("Running: %s %s" % (cmd, kwargs))
+#        if not self.dry:
+#            subprocess.check_call(cmd, **kwargs)
+
+    app.imgbase.hooks.connect("new-base-created",
+                              populate_base)
+
+    # FIXME determine size
+    size = None
+    app.imgbase.add_base(size)
+
+    app.imgbase.hooks.unconnect("new-base-created",
+                                populate_base)
 
 # vim: sw=4 et sts=4

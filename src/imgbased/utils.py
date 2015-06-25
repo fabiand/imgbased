@@ -225,6 +225,9 @@ class ExternalBinary(object):
     def grub2_set_default(self, args, **kwargs):
         return self.call(["grub2-set-default"] + args, **kwargs)
 
+    def systemctl(self, args, **kwargs):
+        return self.call(["systemctl"] + args, **kwargs)
+
 
 class File():
     filename = None
@@ -482,6 +485,22 @@ class RpmPackageDb(PackageDb):
 
     def get_files(self, pkgname):
         return self._rpm("-ql", pkgname)
+
+
+class systemctl():
+    _systemctl = lambda s, *a: ExternalBinary().systemctl(args)
+
+    @staticmethod
+    def start(self, *units):
+        systemctl._systemctl("start", *units)
+
+    @staticmethod
+    def stop(self, *units):
+        systemctl._systemctl("stop", *units)
+
+    @staticmethod
+    def daemon_reload(self):
+        systemctl._systemctl("daemon-reload")
 
 
 class Rsync():
